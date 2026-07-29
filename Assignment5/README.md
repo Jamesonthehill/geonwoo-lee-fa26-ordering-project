@@ -11,6 +11,10 @@ assignment:
 
 Each table has create, read-all, read-one, update, and delete operations.
 
+The application explicitly uses **Pydantic version 2** for request and response
+validation. The schemas use Pydantic 2 features such as `ConfigDict`, and
+controllers use `model_dump()` when applying updates.
+
 ## MySQL Setup
 
 Create the required database in MySQL Workbench:
