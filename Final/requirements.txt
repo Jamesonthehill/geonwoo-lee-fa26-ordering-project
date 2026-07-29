@@ -3,6 +3,5 @@ uvicorn[standard]
 sqlalchemy
 pymysql
 pytest
-pytest-mock
 httpx
 cryptography
