@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Place Order</title>
+  <style>
+    body { font-family: Arial, sans-serif; background: #f6f1e8; padding: 40px; color: #24382f; }
+    main { background: white; border-radius: 12px; margin: auto; max-width: 500px; padding: 24px; }
+    select, input, button { display: block; margin: 12px 0; padding: 10px; width: 100%; }
+    button { background: #26734d; border: 0; color: white; cursor: pointer; }
+    #message { font-weight: bold; }
+  </style>
+</head>
+<body>
+  <main>
+    <h1>Place an Order</h1>
+    <label for="item">Menu item</label>
+    <select id="item"></select>
+    <label for="quantity">Quantity</label>
+    <input id="quantity" type="number" min="1" max="10" value="1">
+    <button type="button" onclick="placeOrder()">Place Order</button>
+    <p id="message"></p>
+  </main>
+
+  <script>
+    fetch("/menu")
+      .then(response => response.json())
+      .then(items => {
+        document.getElementById("item").innerHTML = items
+          .filter(item => item.available)
+          .map(item => `<option value="${item.id}">${item.name} — $${item.price.toFixed(2)}</option>`)
+          .join("");
+      });
+
+    function placeOrder() {
+      const itemId = Number(document.getElementById("item").value);
+      const quantity = Number(document.getElementById("quantity").value);
+      const message = document.getElementById("message");
+
+      if (!Number.isInteger(quantity) || quantity < 1 || quantity > 10) {
+        message.textContent = "Quantity must be between 1 and 10.";
+        return;
+      }
+
+      fetch("/orders", {
+        method: "POST",
+        headers: {"Content-Type": "application/json"},
+        body: JSON.stringify({item_id: itemId, quantity: quantity})
+      })
+        .then(response => response.json().then(data => ({ok: response.ok, data})))
+        .then(result => {
+          message.textContent = result.ok
+            ? `${result.data.message}. Total: $${result.data.total.toFixed(2)}`
+            : result.data.detail;
+        });
+    }
+  </script>
+</body>
+</html>
