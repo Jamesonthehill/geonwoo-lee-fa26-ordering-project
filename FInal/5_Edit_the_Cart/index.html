@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Edit Cart</title>
+  <style>
+    body { background: #f6f1e8; color: #24382f; font-family: Arial, sans-serif; padding: 40px; }
+    main { background: white; border-radius: 12px; margin: auto; max-width: 650px; padding: 24px; }
+    select, input, button { box-sizing: border-box; margin: 6px; padding: 9px; }
+    button { background: #26734d; border: 0; color: white; cursor: pointer; }
+    .remove { background: #a33d32; }
+    li { border-bottom: 1px solid #ddd; padding: 12px 0; }
+    #subtotal { font-size: 20px; font-weight: bold; }
+    #message { color: #26734d; font-weight: bold; }
+  </style>
+</head>
+<body>
+  <main>
+    <h1>Edit Your Cart</h1>
+
+    <select id="new-item">
+      <option data-price="12.50">Avocado Toast</option>
+      <option data-price="5.50">Cafe Latte</option>
+    </select>
+    <button type="button" onclick="addItem()">Add Item</button>
+
+    <ul id="cart"></ul>
+    <p id="subtotal">Subtotal: $0.00</p>
+    <button type="button" onclick="submitOrder()">Submit Order</button>
+    <p id="message"></p>
+  </main>
+
+  <script>
+    function addItem() {
+      const select = document.getElementById("new-item");
+      const option = select.options[select.selectedIndex];
+
+      fetch("/cart", {
+        method: "POST",
+        headers: {"Content-Type": "application/json"},
+        body: JSON.stringify({
+          item: option.text,
+          quantity: 1,
+          price: Number(option.dataset.price)
+        })
+      }).then(loadCart);
+    }
+
+    function changeQuantity(itemId) {
+      const quantity = Number(document.getElementById(`quantity-${itemId}`).value);
+      fetch(`/cart/${itemId}`, {
+        method: "PATCH",
+        headers: {"Content-Type": "application/json"},
+        body: JSON.stringify({quantity})
+      }).then(loadCart);
+    }
+
+    function removeItem(itemId) {
+      fetch(`/cart/${itemId}`, {method: "DELETE"}).then(loadCart);
+    }
+
+    function loadCart() {
+      fetch("/cart")
+        .then(response => response.json())
+        .then(cart => {
+          document.getElementById("cart").innerHTML = cart.items.map(item => `
+            <li>
+              ${item.item} — $${item.line_total.toFixed(2)}
+              <input id="quantity-${item.id}" type="number" min="1" value="${item.quantity}">
+              <button onclick="changeQuantity(${item.id})">Update</button>
+              <button class="remove" onclick="removeItem(${item.id})">Remove</button>
+            </li>
+          `).join("");
+          document.getElementById("subtotal").textContent =
+            `Subtotal: $${cart.subtotal.toFixed(2)}`;
+        });
+    }
+
+    function submitOrder() {
+      fetch("/submit-order", {method: "POST"})
+        .then(response => response.json())
+        .then(result => {
+          document.getElementById("message").textContent =
+            result.message || result.detail;
+          loadCart();
+        });
+    }
+
+    loadCart();
+  </script>
+</body>
+</html>
