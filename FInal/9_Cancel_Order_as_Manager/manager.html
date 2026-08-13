@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Cancel Customer Orders</title>
+  <style>
+    body { background: #f6f1e8; color: #24382f; font-family: Arial, sans-serif; padding: 40px; }
+    main { margin: auto; max-width: 900px; }
+    table { background: white; border-collapse: collapse; width: 100%; }
+    th, td { border: 1px solid #ddd; padding: 12px; text-align: left; }
+    th { background: #26734d; color: white; }
+    button { background: #a33d32; border: 0; color: white; cursor: pointer; padding: 8px 12px; }
+    button:disabled { background: #888; cursor: not-allowed; }
+    .cancelled { color: #a33d32; font-weight: bold; }
+  </style>
+</head>
+<body>
+  <main>
+    <h1>Manage Customer Orders</h1>
+    <table>
+      <thead>
+        <tr>
+          <th>Order Number</th>
+          <th>Item</th>
+          <th>Quantity</th>
+          <th>Total</th>
+          <th>Status</th>
+          <th>Action</th>
+        </tr>
+      </thead>
+      <tbody id="orders">
+        <tr><td colspan="6">Loading orders...</td></tr>
+      </tbody>
+    </table>
+  </main>
+
+  <script>
+    function loadOrders() {
+      fetch("/manager/orders")
+        .then(response => response.json())
+        .then(orders => {
+          document.getElementById("orders").innerHTML = orders.map(order => `
+            <tr>
+              <td>${order.order_number}</td>
+              <td>${order.item}</td>
+              <td>${order.quantity}</td>
+              <td>$${order.total.toFixed(2)}</td>
+              <td class="${order.status === "Cancelled" ? "cancelled" : ""}">
+                ${order.status}
+              </td>
+              <td>
+                <button
+                  ${order.status === "Cancelled" ? "disabled" : ""}
+                  onclick="cancelOrder('${order.order_number}')">
+                  Cancel Order
+                </button>
+              </td>
+            </tr>
+          `).join("");
+        });
+    }
+
+    function cancelOrder(orderNumber) {
+      if (!confirm(`Cancel order ${orderNumber}?`)) return;
+
+      fetch(`/manager/orders/${orderNumber}/cancel`, {method: "PATCH"})
+        .then(response => response.json().then(data => ({ok: response.ok, data})))
+        .then(result => {
+          if (!result.ok) alert(result.data.detail);
+          loadOrders();
+        });
+    }
+
+    loadOrders();
+  </script>
+</body>
+</html>
